@@ -38,18 +38,21 @@ final class S3StorageAdapter(_system: ActorSystem) extends FileStorageAdapter {
   private val awsCredentials = new BasicAWSCredentials(config.key, config.secret)
   private val db = DbExtension(system).db
 
-  val s3Client = {
-    val blueprint = new AmazonS3ScalaClient(awsCredentials)
-    config.endpoint foreach { endpoint ⇒
-      blueprint.client.setEndpoint(endpoint)
-    }
-    config.region foreach { region ⇒
-      blueprint.client.setRegion(Region.getRegion(Regions.fromName(region)))
-    }
-    if (config.pathStyleAccess) {
-      blueprint.client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true))
-    }
-    blueprint
+  system.log.debug("=== S3 config is: {}", config)
+
+  val s3Client = new AmazonS3ScalaClient(awsCredentials)
+  config.endpoint foreach { endpoint ⇒
+    system.log.debug("=== setting endpoint: {}", endpoint)
+    s3Client.client.setEndpoint(endpoint)
+    system.log.debug("=== endpoint set")
+  }
+  config.region foreach { region ⇒
+    system.log.debug("=== setting region: {}", region)
+    s3Client.client.setRegion(Region.getRegion(Regions.fromName(region)))
+    system.log.debug("=== region set")
+  }
+  if (config.pathStyleAccess) {
+    s3Client.client.setS3ClientOptions(new S3ClientOptions().withPathStyleAccess(true))
   }
 
   val transferManager = new TransferManager(s3Client.client)
